@@ -53,9 +53,8 @@ func RegisterRoutes(router *gin.Engine, orderCh chan Order) {
 		}
 
 		newOrder := Order{
-			ID:    len(items) + 1,
 			Items: items,
-			Total: int(total),
+			Total: total,
 		}
 
 		if err = db.DB.Omit("Items.*").Create(&newOrder).Error; err != nil {
@@ -68,6 +67,66 @@ func RegisterRoutes(router *gin.Engine, orderCh chan Order) {
 		orderCh <- newOrder
 
 		ctx.JSON(200, gin.H{"stauts": "Заказ создан", "order": newOrder, "Блюда отсутствующие в меню": notFound})
+	})
+
+	router.POST("/orders/pay", func(ctx *gin.Context) {
+		var req struct {
+			ID uint `json:"id"`
+		}
+
+		if err := ctx.BindJSON(&req); err != nil {
+			ctx.JSON(404, gin.H{"error": "Ошибка чтения JSON"})
+			return
+		}
+
+		var o Order
+
+		if err := db.DB.Preload("Items").First(&o, req.ID).Error; err != nil {
+			ctx.JSON(404, gin.H{"error": "Заказ не найден"})
+			return
+		}
+
+		if o.Paid {
+			ctx.JSON(400, gin.H{"error": "Заказ уже оплачен"})
+			return
+		}
+
+		o.Paid = true
+
+		if err := db.DB.Save(&o).Error; err != nil {
+			ctx.JSON(500, gin.H{"error": "Ошибка сохранения заказа"})
+			return
+		}
+
+		ctx.JSON(200, gin.H{"status": "Оплата прошла успешно", "order": o})
+
+	})
+
+	router.POST("/orders/tip", func(ctx *gin.Context) {
+		var req struct {
+			ID     uint    `json:"id"`
+			Amount float64 `json:"amount"`
+		}
+
+		if err := ctx.BindJSON(&req); err != nil {
+			ctx.JSON(404, gin.H{"error": "Ошибка чтения JSON"})
+			return
+		}
+
+		var o Order
+		if err := db.DB.First(&o, req.ID).Error; err != nil {
+			ctx.JSON(404, gin.H{"error": "Заказ не найден"})
+			return
+		}
+
+		o.Tip += req.Amount
+		if err := db.DB.Save(&o).Error; err != nil {
+			ctx.JSON(500, gin.H{"error": "Ошибка сохранения заказа"})
+			return
+		}
+
+		ctx.JSON(200, gin.H{"status": "Чаевые добавлены", "order": o})
+
 	})
 
 }
