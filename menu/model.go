@@ -4,7 +4,7 @@ import "gorm.io/gorm"
 
 type Dish struct {
 	gorm.Model
-	Name   string  `gorm:"unique;not null" json:"name"`
+	Name   string  `gorm:"uniqueIndex:idx_name_deleted_at,where:deleted_at IS NULL" json:"name"`
 	Price  float64 `gorm:"not null" json:"price"`
 	Weight float64 `json:"weight"`
 }

@@ -2,6 +2,7 @@ package menu
 
 import (
 	db "Day8/database"
+	"fmt"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +10,7 @@ import (
 
 var menuMutex sync.RWMutex
 
-func RegisterRoutes(router *gin.Engine, menuCh chan Dish) {
+func RegisterRoutes(router *gin.Engine, menuCh chan uint) {
 	router.GET("/", func(ctx *gin.Context) {
 		ctx.String(200, "Главная страница!")
 	})
@@ -49,7 +50,7 @@ func RegisterRoutes(router *gin.Engine, menuCh chan Dish) {
 			return
 		}
 
-		menuCh <- newDish
+		menuCh <- newDish.ID
 
 		ctx.JSON(200, gin.H{"Добавлено новое блюдо:": newDish})
 	})
@@ -88,59 +89,14 @@ func RegisterRoutes(router *gin.Engine, menuCh chan Dish) {
 	})
 }
 
-// func AddRandomDishes(menuCh chan Dish) {
-// 	randomDishes := []Dish{
-// 		{Name: "Случайный суп", Price: 150.0},
-// 		{Name: "Случайный салат", Price: 120.0},
-// 		{Name: "Случайное основное блюдо", Price: 250.0},
-// 		{Name: "Случайный десерт", Price: 100.0},
-// 		{Name: "Случайный напиток", Price: 80.0},
-// 	}
+func MonitorNewDish(menuCh chan uint) {
+	for id := range menuCh {
+		var d Dish
+		if err := db.DB.First(&d, id).Error; err != nil {
+			fmt.Println("Ошибка загрузки новой позиции:", err)
+			continue
+		}
 
-// 	ticker := time.NewTicker(3 * time.Second)
-// 	defer ticker.Stop()
-
-// 	for range ticker.C {
-// 		randomDish := randomDishes[rand.IntN(len(randomDishes))]
-// 		randomDish.Price = 50 + float64(rand.IntN(300))
-
-// 		menuMutex.Lock()
-// 		*menu = append(*menu, randomDish)
-// 		currentMenu := *menu
-// 		menuMutex.Unlock()
-
-// 		if err := storage.Save(filename, currentMenu); err != nil {
-// 			fmt.Printf("Ошибка сохранения меню: %v\n", err)
-// 		}
-
-// 		menuCh <- randomDish
-// 		fmt.Printf("Добавлено случайное блюдо: %s (%.2f руб)\n", randomDish.Name, randomDish.Price)
-// 	}
-// }
-
-// func PrintCurrentMenu(menu *[]Dish) {
-// 	ticker := time.NewTicker(1 * time.Second)
-// 	defer ticker.Stop()
-
-// 	for range ticker.C {
-// 		menuMutex.RLock()
-// 		currentMenu := *menu
-// 		menuMutex.RUnlock()
-
-// 		fmt.Println("\n====== ТЕКУЩЕЕ МЕНЮ ======")
-// 		if len(currentMenu) == 0 {
-// 			fmt.Println("Меню пустое")
-// 		} else {
-// 			for i, dish := range currentMenu {
-// 				fmt.Printf("%d. %s - %.2f руб\n", i+1, dish.Name, dish.Price)
-// 			}
-// 		}
-// 		fmt.Printf("==========================\nВсего блюд: %d\n", len(currentMenu))
-// 	}
-// }
-
-// func MonitoringNewDish(menuCh chan Dish) {
-// 	for newDish := range menuCh {
-// 		fmt.Printf("Новое блюдо в меню: %s - %.2f руб\n", newDish.Name, newDish.Price)
-// 	}
-// }
+		fmt.Printf("Новое блюдо: %s — $%.2f (%.2fг)\n", d.Name, d.Price, d.Weight)
+	}
+}

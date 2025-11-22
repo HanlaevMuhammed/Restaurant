@@ -4,7 +4,10 @@ import (
 	db "Day8/database"
 	"Day8/menu"
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/skip2/go-qrcode"
 
 	"github.com/gin-gonic/gin"
 )
@@ -129,11 +132,44 @@ func RegisterRoutes(router *gin.Engine, orderCh chan Order) {
 
 	})
 
+	router.GET("/orders/qrcode/:id", func(ctx *gin.Context) {
+
+		idstr := ctx.Param("id")
+
+		id, err := strconv.Atoi(idstr)
+		if err != nil {
+			ctx.JSON(404, gin.H{"error": "Не удалось преобразовать в str"})
+			return
+		}
+
+		var o Order
+		if err := db.DB.First(&o, id).Error; err != nil {
+			ctx.JSON(404, gin.H{"error": "Заказ не найден"})
+			return
+		}
+
+		url := fmt.Sprintf("http://localhost:8080/orders/qrcode/%d", id)
+
+		png, err := qrcode.Encode(url, qrcode.Medium, 256)
+		if err != nil {
+			ctx.JSON(500, gin.H{"error": "Ошибка генерации QRcode"})
+			return
+		}
+
+		ctx.Data(200, "image/png", png)
+
+	})
+
 }
 
 func MonitorNewOrders(orderCh chan Order) {
 	for newOrder := range orderCh {
-		fmt.Printf("Получен новый заказ: ID=%d, Сумма=%d, Количество блюд=%d\n",
-			newOrder.ID, newOrder.Total, len(newOrder.Items))
+		var o Order
+		if err := db.DB.Preload("Items").First(&o, newOrder.ID).Error; err != nil {
+			fmt.Println("Ошибка загрузки заказа:", err)
+			return
+		}
+		fmt.Printf("Получен новый заказ: ID=%d, Сумма=%.2f, Количество блюд=%d\n",
+			o.ID, o.Total, len(o.Items))
 	}
 }
