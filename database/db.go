@@ -1,7 +1,9 @@
 package database
 
 import (
+	"fmt"
 	"log"
+	"restaurant_service/internal/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -10,12 +12,19 @@ import (
 var DB *gorm.DB
 
 func Connect() {
-	dsn := "host=host.docker.internal user=hanlaevm5 password=123 dbname=restaurant port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	config.InitConfig()
+	dbConf := config.Config.Database
 
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
+		dbConf.Host, dbConf.User, dbConf.Password, dbConf.Name, dbConf.Port, dbConf.SSLMode,
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Ошибка подключения к базе данных:", err)
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
 	}
+
 	DB = db
 	log.Println("База данных успешно подключена!")
 }

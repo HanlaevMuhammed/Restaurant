@@ -1,0 +1,10 @@
+database:
+  host: "host.docker.internal"
+  port: 5432
+  user: "hanlaevm5"
+  password: "123"
+  name: "restaurant"
+  sslmode: "disable"
+
+server:
+  port: 8080
