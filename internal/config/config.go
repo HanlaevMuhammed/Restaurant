@@ -32,7 +32,7 @@ func InitConfig() {
 	viper.AddConfigPath("internal/config")
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Ошибка чтения config.yaml: %v", err)
+		log.Fatal("Ошибка чтения config.yaml: %v", err)
 	}
 
 	Config.Database.Host = viper.GetString("database.host")
@@ -43,4 +43,5 @@ func InitConfig() {
 	Config.Database.SSLMode = viper.GetString("database.sslmode")
 
 	Config.Server.Port = viper.GetInt("server.port")
+
 }

@@ -14,7 +14,7 @@ func main() {
 	menuCh := make(chan uint, 10)
 
 	dishRepo := storage.NewDishRepository(database.DB)
-	orderRepo := storage.NewOrderRepository(database.DB) // теперь с DB
+	orderRepo := storage.NewOrderRepository(database.DB) 
 
 	menuService := &domain.MenuService{Repo: dishRepo}
 	orderService := &domain.OrderService{Repo: orderRepo}
