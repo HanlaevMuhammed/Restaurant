@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: hanlaevm5
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: restaurant_service
+    ports:
+      - "5433:5432"
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: "postgresql://hanlaevm5:123@postgres:5432/restaurant_service"
